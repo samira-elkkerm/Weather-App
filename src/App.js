@@ -4,6 +4,8 @@ import axios from "axios";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faFrown } from "@fortawesome/free-solid-svg-icons";
 import "./App.css";
+import Forecast from "./Feature1"; // Import Forecast component
+
 function WeatherApp() {
   const [input, setInput] = useState("");
   const [weather, setWeather] = useState({
@@ -13,6 +15,7 @@ function WeatherApp() {
     error: false,
   });
 
+  // Function to format the current date
   const toDateFunction = () => {
     const months = [
       "Janvier",
@@ -43,6 +46,7 @@ function WeatherApp() {
     }`;
   };
 
+  // Function to fetch weather data and forecast
   const search = async (event) => {
     if (event.key === "Enter") {
       event.preventDefault();
@@ -129,6 +133,11 @@ function WeatherApp() {
           <p>{Math.round(weather.data.main.temp)}°C</p>
           <p>Vitesse du vent : {weather.data.wind.speed} m/s</p>
         </div>
+      )}
+
+      {/* 5-Day Forecast */}
+      {weather.forecast.length > 0 && (
+        <Forecast forecast={weather.forecast} /> // Use Forecast component
       )}
     </div>
   );
