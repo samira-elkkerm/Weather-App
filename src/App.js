@@ -4,12 +4,12 @@ import axios from "axios";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faFrown } from "@fortawesome/free-solid-svg-icons";
 import "./App.css";
-
-function Grp204WeatherApp() {
+function WeatherApp() {
   const [input, setInput] = useState("");
   const [weather, setWeather] = useState({
     loading: false,
     data: {},
+    forecast: [],
     error: false,
   });
 
@@ -28,7 +28,7 @@ function Grp204WeatherApp() {
       "Novembre",
       "Décembre",
     ];
-    const WeekDays = [
+    const weekDays = [
       "Dimanche",
       "Lundi",
       "Mardi",
@@ -38,7 +38,7 @@ function Grp204WeatherApp() {
       "Samedi",
     ];
     const currentDate = new Date();
-    return `${WeekDays[currentDate.getDay()]} ${currentDate.getDate()} ${
+    return `${weekDays[currentDate.getDay()]} ${currentDate.getDate()} ${
       months[currentDate.getMonth()]
     }`;
   };
@@ -46,24 +46,41 @@ function Grp204WeatherApp() {
   const search = async (event) => {
     if (event.key === "Enter") {
       event.preventDefault();
-      if (input.trim() === "") return; // Prevent empty search
-
+      setInput("");
       setWeather({ ...weather, loading: true });
+
       const url = "https://api.openweathermap.org/data/2.5/weather";
-      const api_key = process.env.REACT_APP_API_KEY; // Use environment variable
+      const forecastUrl = "https://api.openweathermap.org/data/2.5/forecast";
+      const apiKey = "f00c38e0279b7bc85480c3fe775d518c";
 
       try {
-        const res = await axios.get(url, {
+        // Fetch current weather
+        const currentRes = await axios.get(url, {
           params: {
             q: input,
             units: "metric",
-            appid: api_key,
+            appid: apiKey,
           },
         });
-        setWeather({ data: res.data, loading: false, error: false });
+
+        // Fetch 5-day forecast
+        const forecastRes = await axios.get(forecastUrl, {
+          params: {
+            q: input,
+            units: "metric",
+            appid: apiKey,
+          },
+        });
+
+        // Update weather and forecast data
+        setWeather({
+          data: currentRes.data,
+          forecast: forecastRes.data.list.filter((_, index) => index % 8 === 0), // Get forecast data for every 8th entry (12 hours apart)
+          loading: false,
+          error: false,
+        });
       } catch (error) {
-        console.error("Error fetching weather data:", error);
-        setWeather({ ...weather, data: {}, error: true });
+        setWeather({ ...weather, data: {}, forecast: [], error: true });
         setInput("");
       }
     }
@@ -71,7 +88,9 @@ function Grp204WeatherApp() {
 
   return (
     <div className="App">
-      <h1 className="app-name">Application Météo grp204</h1>
+      <h1 className="app-name">Application Météo </h1>
+
+      {/* Search Bar */}
       <div className="search-bar">
         <input
           type="text"
@@ -82,17 +101,23 @@ function Grp204WeatherApp() {
           onKeyPress={search}
         />
       </div>
+
+      {/* Loading Spinner */}
       {weather.loading && (
         <Oval type="Oval" color="black" height={100} width={100} />
       )}
+
+      {/* Error Message */}
       {weather.error && (
-        <span className="error-message">
+        <div className="error-message">
           <FontAwesomeIcon icon={faFrown} />
           <span>Ville introuvable</span>
-        </span>
+        </div>
       )}
-      {weather.data.main && (
-        <div>
+
+      {/* Weather Information */}
+      {weather.data && weather.data.main && (
+        <div className="weather-info">
           <h2>
             {weather.data.name}, {weather.data.sys.country}
           </h2>
@@ -109,4 +134,4 @@ function Grp204WeatherApp() {
   );
 }
 
-export default Grp204WeatherApp;
+export default WeatherApp;
