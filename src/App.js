@@ -1,10 +1,12 @@
-import { Oval } from "react-loader-spinner";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import axios from "axios";
+import { Oval } from "react-loader-spinner";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faFrown } from "@fortawesome/free-solid-svg-icons";
 import "./App.css";
-function WeatherApp() {
+import FavoriteCities from "./Feature2"; // Import your FavoriteCities component
+
+function Grp204WeatherApp() {
   const [input, setInput] = useState("");
   const [weather, setWeather] = useState({
     loading: false,
@@ -12,7 +14,15 @@ function WeatherApp() {
     forecast: [],
     error: false,
   });
+  const [favorites, setFavorites] = useState([]);
 
+  // Load favorite cities from localStorage on initial load
+  useEffect(() => {
+    const savedFavorites = JSON.parse(localStorage.getItem("favorites")) || [];
+    setFavorites(savedFavorites);
+  }, []);
+
+  // Function to format the current date
   const toDateFunction = () => {
     const months = [
       "Janvier",
@@ -43,52 +53,80 @@ function WeatherApp() {
     }`;
   };
 
-  const search = async (event) => {
-    if (event.key === "Enter") {
-      event.preventDefault();
-      setInput("");
-      setWeather({ ...weather, loading: true });
+  // Function to fetch weather data and forecast
+  const search = async (city) => {
+    if (!city) return; // Ensure city is valid
+    setWeather({ ...weather, loading: true });
 
-      const url = "https://api.openweathermap.org/data/2.5/weather";
-      const forecastUrl = "https://api.openweathermap.org/data/2.5/forecast";
-      const apiKey = "f00c38e0279b7bc85480c3fe775d518c";
+    const url = "https://api.openweathermap.org/data/2.5/weather";
+    const forecastUrl = "https://api.openweathermap.org/data/2.5/forecast";
+    const apiKey = "f00c38e0279b7bc85480c3fe775d518c";
 
-      try {
-        // Fetch current weather
-        const currentRes = await axios.get(url, {
-          params: {
-            q: input,
-            units: "metric",
-            appid: apiKey,
-          },
-        });
+    try {
+      // Fetch current weather
+      const currentRes = await axios.get(url, {
+        params: {
+          q: city,
+          units: "metric",
+          appid: apiKey,
+        },
+      });
 
-        // Fetch 5-day forecast
-        const forecastRes = await axios.get(forecastUrl, {
-          params: {
-            q: input,
-            units: "metric",
-            appid: apiKey,
-          },
-        });
+      // Fetch 5-day forecast
+      const forecastRes = await axios.get(forecastUrl, {
+        params: {
+          q: city,
+          units: "metric",
+          appid: apiKey,
+        },
+      });
 
-        // Update weather and forecast data
-        setWeather({
-          data: currentRes.data,
-          forecast: forecastRes.data.list.filter((_, index) => index % 8 === 0), // Get forecast data for every 8th entry (12 hours apart)
-          loading: false,
-          error: false,
-        });
-      } catch (error) {
-        setWeather({ ...weather, data: {}, forecast: [], error: true });
-        setInput("");
-      }
+      // Update weather and forecast data
+      setWeather({
+        data: currentRes.data,
+        forecast: forecastRes.data.list.filter((_, index) => index % 8 === 0), // Get forecast data for every 8th entry (12 hours apart)
+        loading: false,
+        error: false,
+      });
+    } catch (error) {
+      setWeather({ ...weather, data: {}, forecast: [], error: true });
     }
+  };
+
+  // Add city to favorites and update localStorage
+  const addToFavorites = () => {
+    if (input && !favorites.includes(input)) {
+      const updatedFavorites = [...favorites, input];
+      setFavorites(updatedFavorites);
+      localStorage.setItem("favorites", JSON.stringify(updatedFavorites));
+    }
+  };
+
+  // Select a favorite city and load its weather data
+  const selectFavoriteCity = (cityName) => {
+    setInput(cityName);
+    search(cityName); // Directly call search with the city name
+  };
+
+  // Handle key press in the input field
+  const handleKeyPress = (event) => {
+    if (event.key === "Enter") {
+      event.preventDefault(); // Prevent form submission if inside a form
+      search(input); // Call search with the current input value
+      setInput(""); // Clear input after searching
+    }
+  };
+
+  // Function to remove a city from favorites
+  const removeFromFavorites = (city) => {
+    const updatedFavorites = favorites.filter((fav) => fav !== city);
+    setFavorites(updatedFavorites);
+    localStorage.setItem("favorites", JSON.stringify(updatedFavorites));
   };
 
   return (
     <div className="App">
-      <h1 className="app-name">Application Météo </h1>
+      <h1 className="app-name">Application Météo grp204</h1>
 
       {/* Search Bar */}
       <div className="search-bar">
@@ -97,9 +135,11 @@ function WeatherApp() {
           className="city-search"
           placeholder="Entrez le nom de la ville..."
           value={input}
-          onChange={(event) => setInput(event.target.value)}
-          onKeyPress={search}
+          onChange={(e) => setInput(e.target.value)}
+          onKeyPress={handleKeyPress} // Handle key press for Enter key
         />
+        <button onClick={addToFavorites}>Ajouter aux favoris</button>{" "}
+        {/* Add to favorites */}
       </div>
 
       {/* Loading Spinner */}
@@ -130,8 +170,15 @@ function WeatherApp() {
           <p>Vitesse du vent : {weather.data.wind.speed} m/s</p>
         </div>
       )}
+
+      {/* Display Favorite Cities */}
+      <FavoriteCities
+        favorites={favorites}
+        selectFavoriteCity={selectFavoriteCity}
+        removeFromFavorites={removeFromFavorites}
+      />
     </div>
   );
 }
 
-export default WeatherApp;
+export default Grp204WeatherApp;
